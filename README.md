@@ -1,0 +1,495 @@
+# Run GitHub CI in HardenedBSD 
+
+![Test](https://github.com/vmactions/hardenedbsd-vm/workflows/Test/badge.svg)
+
+
+
+See all the supported VMs: [VMActions.org](https://vmactions.org)
+
+Powered by [AnyVM.org](https://anyvm.org)
+
+## :robot: AI Ready
+
+> [!TIP]
+> **You don't need to write this workflow by hand.**
+>
+> These VMs are now AI-ready. With the **[vmactions-ci skill](https://github.com/vmactions/vmactions-skill)**, an AI coding agent -- Claude Code, Codex, Copilot CLI, Gemini CLI, and others -- understands the full vmactions interface and writes the GitHub Actions CI for you, **automatically**.
+>
+> Just describe what you want in plain language, e.g. *"run my tests on HardenedBSD"* or *"check that my project builds on HardenedBSD aarch64"*, and the agent generates a correct, ready-to-commit `test.yml`. It will:
+>
+> - pick the right action, `release`, and `arch` for your target;
+> - install your toolchain and dependencies in the `prepare` step;
+> - forward your secrets and environment variables into the VM;
+> - sync your source code in and back out; and
+> - steer around the common footguns -- the per-OS default shell, the `riscv64` sync method, keeping `runs-on: ubuntu-latest` even for other arches, pinning the action version, and more.
+>
+> No need to memorize releases, architectures, package managers, or shells -- the agent handles it. Install the skill once and just ask.
+>
+> ### >> [Get the vmactions-ci skill](https://github.com/vmactions/vmactions-skill) <<
+
+Use this action to run your CI in HardenedBSD.
+
+The github workflow only supports Ubuntu, Windows and MacOS. But what if you need to use HardenedBSD?
+
+
+All the supported releases are here:
+
+
+
+| Release | x86_64 |
+|---------|---------|
+| 15 | ✅ (rsync,scp,sshfs,nfs,tar) |
+
+<!-- shelved: 14 -->
+
+amd64 only: HardenedBSD builds no other architecture, and it publishes
+installer ISOs rather than VM images, so this builder takes the ISO path.
+
+Release `15` is HardenedBSD's 15-STABLE branch. It follows that branch's
+rolling `LATEST` installer -- upstream publishes `build-N` directories and
+moves `LATEST` to the newest -- so an image is a snapshot of the branch at
+build time, not a fixed upstream version, the same way nextbsd-builder tracks
+a `continuous` tag.
+
+Release 14 is deliberately absent. Upstream has moved on from it: the newest
+14-STABLE installer is build-33 from 2025-12-17 and has not been rebuilt
+since, and the matching package repository is gone --
+`pkg.hardenedbsd.org/HardenedBSD/pkg/FreeBSD:14:amd64/` returns 404 while
+`:15:` and `:16:` answer, so a 14 guest cannot even bootstrap `pkg`. Only
+15-STABLE and current are maintained. `conf/hardenedbsd-14.conf` is kept on
+disk with the details rather than deleted, so this does not have to be
+rediscovered.
+
+The installer ISO is VGA-only upstream (a stock boot produces zero bytes on
+COM1), so `hooks/host_beforeBuild.py` remixes it with a serial console before
+the build starts, and bakes the distribution sets into `/usr/freebsd-dist` on
+that ISO so bsdinstall never fetches over the network. That hook documents the
+three traps involved -- xorriso's `replay` silently dropping the El Torito
+record, the ISO volume label being load-bearing for the root mount, and
+`-osirrox` extraction losing root ownership -- each of which produces a broken
+image rather than an error.
+
+How the images are built:
+
+Each image is built automatically in the
+[anyvm-org/hardenedbsd-builder](https://github.com/anyvm-org/hardenedbsd-builder)
+repo's GitHub Actions: it downloads the official HardenedBSD installer
+ISO, remixes it for a serial console, boots it in QEMU, answers the
+installer unattended, enables ssh, pre-installs the packages listed in
+the conf, and exports the installed disk as a compressed qcow2 image.
+
+Upstream install media: the official HardenedBSD installers from
+https://installers.hardenedbsd.org/pub/.
+
+
+
+
+
+## 1. Example: `test.yml`:
+
+```yml
+
+name: Test
+
+on: [push]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    name: A job to run test in HardenedBSD
+    env:
+      MYTOKEN : ${{ secrets.MYTOKEN }}
+      MYTOKEN2: "value2"
+    steps:
+    - uses: actions/checkout@v7
+    - name: Test in HardenedBSD
+      id: test
+      uses: vmactions/hardenedbsd-vm@v1
+      with:
+        envs: 'MYTOKEN MYTOKEN2'
+        prepare: |
+          pkg install -y socat
+
+        run: |
+          pwd
+          ls -lah
+          whoami
+          env
+          uname -a
+          nproc
+          echo "OK"
+
+
+
+
+
+```
+
+
+The latest major version is: `v1`, which is the most recommended to use. (You can also use the latest full version: `v1.0.1`)  
+
+
+If you are migrating from the previous `v0`, please change the `runs-on: ` to `runs-on: ubuntu-latest`
+
+
+The `envs: 'MYTOKEN MYTOKEN2'` is the env names that you want to pass into the vm.
+
+The `run: xxxxx`  is the command you want to run in the vm.
+
+The env variables are all copied into the VM, and the source code and directory are all synchronized into the VM.
+
+The working dir for `run` in the VM is the same as in the Host machine.
+
+All the source code tree in the Host machine are mounted into the VM.
+
+All the `GITHUB_*` as well as `CI=true` env variables are passed into the VM.
+
+So, you will have the same directory and same default env variables when you `run` the CI script.
+
+The `prepare` and `run` scripts are always executed with `sh` in the VM, whatever the default login shell of the VM is.
+
+
+
+
+
+## 2. Share code
+
+The code is shared from the host to the VM via the first sync method listed for your release and architecture in the table above (`rsync` for most of them), you can choose to use `sshfs` or `nfs` or `scp` to share code instead.
+
+
+```yaml
+
+...
+
+    - name: Test
+      id: test
+      uses: vmactions/hardenedbsd-vm@v1
+      with:
+        sync: sshfs  # or: nfs
+
+
+...
+
+
+```
+
+You can also set `sync: no`, so the files will not be synced to the  VM.
+
+
+When using a copy based sync method (`rsync`, `scp`, `tar` or `9p`), you can define `copyback: false` to not copy files back from the VM to the host. It has no effect on `sshfs` and `nfs`, which are live mounts and never copy back.
+
+
+```yaml
+
+...
+
+    - name: Test
+      id: test
+      uses: vmactions/hardenedbsd-vm@v1
+      with:
+        sync: rsync
+        copyback: false
+
+
+...
+
+
+```
+
+
+With `sync: nfs` the workspace is a mount of the runner's directory, and every user in the VM, root included, is mapped to the runner's user on the host (GNU Hurd excepted). So `chown` / `chgrp` on files in the workspace fail with `Operation not permitted`, and so does `tar -x` as root on an archive that stores another owner (e.g. `uid 0`), because it tries to restore that owner. Use a copy based method (`rsync`, `scp` or `tar`), which puts the files on the VM's own disk, or extract with `tar --no-same-owner`.
+
+
+
+
+
+## 3. NAT from host runner to the VM
+
+You can add NAT port between the host and the VM.
+
+```yaml
+...
+    - name: Test
+      id: test
+      uses: vmactions/hardenedbsd-vm@v1
+      with:
+        nat: |
+          "8080": "80"
+          "8443": "443"
+          udp:"8081": "80"
+...
+```
+
+
+## 4. Set memory and cpu
+
+The default memory of the VM is 6144MB, you can use `mem` option to set the memory size:
+
+```yaml
+
+...
+    - name: Test
+      id: test
+      uses: vmactions/hardenedbsd-vm@v1
+      with:
+        mem: 4096
+...
+```
+
+
+
+The VM is using all the cpu cores of the host by default, you can use `cpu` option to change the cpu cores:
+
+```yaml
+
+...
+    - name: Test
+      id: test
+      uses: vmactions/hardenedbsd-vm@v1
+      with:
+        cpu: 3
+...
+```
+
+
+## 5. Select release
+
+It uses [the HardenedBSD 15](conf/default.release.conf) by default, you can use `release` option to use another version of HardenedBSD:
+
+```yaml
+...
+    - name: Test
+      id: test
+      uses: vmactions/hardenedbsd-vm@v1
+      with:
+        release: "15"
+...
+```
+
+
+## 6. Select architecture
+
+The vm is using x86_64(AMD64) by default, but you can use `arch` option to change the architecture:
+
+```yaml
+...
+    - name: Test
+      id: test
+      uses: vmactions/hardenedbsd-vm@v1
+      with:
+        arch: aarch64
+...
+```
+
+When you run with `aarch64`, the host runner should still be the normal `x86_64` runner: `runs-on: ubuntu-latest`
+
+It's not recommended to use `ubuntu-24.04-arm` as runner, it's much more slower.
+
+
+
+## 7. Custom shell
+
+Support custom shell:
+
+```yaml
+...
+    steps:
+    - uses: actions/checkout@v7
+    - name: Start VM
+      id: vm
+      uses: vmactions/hardenedbsd-vm@v1
+      with:
+        sync: nfs
+    - name: Custom shell step 1
+      shell: hardenedbsd {0}
+      run: |
+        pwd
+        echo "this is step 1, running inside the VM"
+    - name: Custom shell step 2
+      shell: hardenedbsd {0}
+      run: |
+        pwd
+        echo "this is step 2, running inside the VM"
+...
+```
+
+The custom shell will automatically `cd` into `$GITHUB_WORKSPACE` if it exists before running your commands.
+
+How file changes propagate between the host and the VM depends on the `sync` method:
+
+- `sync: nfs` or `sync: sshfs`: the workspace is a live mount, so file changes are visible on both sides immediately.
+- `sync: rsync` or `sync: scp`: the wrapper syncs the workspace to the VM before each custom shell step and syncs it back afterwards, so files created in the VM are available to later host steps (and vice versa). `rsync` transfers are incremental; `scp` copies the whole workspace each time, which can be slow for large workspaces.
+
+You can also use `custom-shell-name` to set a custom name for the shell wrapper:
+
+```yaml
+...
+    steps:
+    - uses: actions/checkout@v7
+    - name: Start VM
+      id: vm
+      uses: vmactions/hardenedbsd-vm@v1
+      with:
+        sync: nfs
+        custom-shell-name: vmsh
+    - name: Custom shell step 1
+      shell: vmsh {0}
+      run: |
+        pwd
+        echo "this is step 1, running inside the VM"
+    - name: Custom shell step 2
+      shell: vmsh {0}
+      run: |
+        pwd
+        echo "this is step 2, running inside the VM"
+...
+```
+
+
+## 8. Synchronize VM time
+
+If the time in VM is not correct, You can use `sync-time` option to synchronize the VM time with NTP:
+
+```yaml
+...
+    - name: Test
+      id: test
+      uses: vmactions/hardenedbsd-vm@v1
+      with:
+        sync-time: true
+...
+```
+
+
+## 9. Disable cache
+
+By default, the action caches `apt` packages on the host and VM images/artifacts. You can use the `disable-cache` option to disable this:
+
+```yml
+...
+    - name: Test
+      id: test
+      uses: vmactions/hardenedbsd-vm@v1
+      with:
+        disable-cache: true
+...
+```
+
+
+## 10. Cache the VM image after prepare
+
+The `prepare` step (installing packages etc.) normally runs on every build. With `cache-after-prepare: true`, the action shuts the VM down cleanly after `prepare` has finished, caches the prepared VM image, and boots the VM again before `run`. Later runs with the same `prepare` script restore the prepared image, skip `prepare` entirely, and start directly at `run`:
+
+```yml
+...
+    - name: Test
+      id: test
+      uses: vmactions/hardenedbsd-vm@v1
+      with:
+        cache-after-prepare: true
+        prepare: |
+          pkg install -y socat
+        run: |
+          ...
+...
+```
+
+That is all `cache-after-prepare` needs. The `cache-after-prepare-key-suffix` option below is **optional**; leave it out unless you need it.
+
+The cache key only covers the `prepare` text itself. When `prepare` runs a script from your repository, a change to that script would not rebuild the prepared image. The optional `cache-after-prepare-key-suffix` covers that case: its value is appended to the cache key, so a different value means a different cache. It can be a fixed string you bump by hand (`cache-after-prepare-key-suffix: v2`), or a hash of the files `prepare` depends on:
+
+```yml
+...
+    steps:
+    - uses: actions/checkout@v7
+    - name: Test
+      id: test
+      uses: vmactions/hardenedbsd-vm@v1
+      with:
+        cache-after-prepare: true
+        cache-after-prepare-key-suffix: deps-${{ hashFiles('ci/install-deps.sh') }}
+        prepare: |
+          sh ci/install-deps.sh
+        run: |
+          ...
+...
+```
+
+`hashFiles()` is evaluated on the runner, relative to the workspace, so the checkout must come first. It returns an empty string when no file matches, and the key then no longer follows the file, so double-check the path.
+
+Notes:
+
+- The cache key includes a hash of the `prepare` script and the `sync` method, so changing either of them rebuilds the prepared image from the base image. `cache-after-prepare-key-suffix` is optional and empty by default; when set, its value is appended to the key.
+- The source tree is still synchronized into the VM on every run; only the `prepare` step is skipped.
+- The first run (or any run after `prepare` changes) takes longer: the VM is shut down after `prepare`, the prepared image is cached, and the VM boots again before `run`.
+- The action output `cache-after-prepare-hit` is `true` when a prepared image was restored and `prepare` was skipped.
+- The option is ignored when `disable-cache: true` is set or when `prepare` is empty.
+
+
+## 11. Debug on error
+
+If you want to debug the VM when the `prepare` or `run` step fails, you can set `debug-on-error: true`.
+
+When a failure occurs, the action will enable a remote VNC link and wait for your interaction. You can then access the VM via VNC to debug. To continue or finish the action, you can run `touch ~/continue` inside the VM.
+
+[First create a variable `DEBUG_ON_ERROR` with value being "true"](https://docs.github.com/en/actions/how-tos/write-workflows/choose-what-workflows-do/use-variables),
+
+Then use it in the workflow:
+
+```yaml
+...
+    - name: Test
+      id: test
+      uses: vmactions/hardenedbsd-vm@v1
+      with:
+        debug-on-error: ${{ vars.DEBUG_ON_ERROR }}
+
+...
+```
+
+You can also set the `vnc-password` parameter to set a custom password to protect the VNC link:
+
+```yaml
+...
+    - name: Test
+      id: test
+      uses: vmactions/hardenedbsd-vm@v1
+      with:
+        debug-on-error: ${{ vars.DEBUG_ON_ERROR }}
+        vnc-password: ${{ secrets.VNC_PASSWORD }}
+
+...
+```
+
+You will be asked to input the username and password when you access the VNC link. The username can be any string, the password is the value of the `vnc-password` parameter.
+
+
+See more: [debug on error](https://github.com/vmactions/.github/wiki/debug%E2%80%90on%E2%80%90error)
+
+
+
+# Under the hood
+
+We use Qemu to run the HardenedBSD VM.
+
+
+
+
+# Upcoming features:
+
+1. Support MacOS runner and Windows runner.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

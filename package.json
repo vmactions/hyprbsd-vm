@@ -1,0 +1,27 @@
+{
+  "name": "vmactions-HardenedBSD",
+  "version": "1.0.1",
+  "description": "GitHub actions for HardenedBSD",
+  "type": "module",
+  "main": "index.js",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/vmactions/hardenedbsd-vm.git"
+  },
+  "keywords": [
+    "GitHub",
+    "Actions",
+    "HardenedBSD"
+  ],
+  "author": "",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/vmactions/hardenedbsd-vm/issues"
+  },
+  "homepage": "https://github.com/vmactions/hardenedbsd-vm",
+  "dependencies": {
+    "@actions/core": "^3.0.0",
+    "@actions/exec": "^3.0.0",
+    "@actions/cache": "^6.0.0"
+  }
+}
