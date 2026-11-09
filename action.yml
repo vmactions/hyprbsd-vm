@@ -1,10 +1,10 @@
-name: 'HardenedBSD-vm'
-description: 'Test in a real HardenedBSD virtual machine on GitHub Actions -- QEMU-powered, with SSH and two-way folder sync'
+name: 'HyprBSD-vm'
+description: 'Test in a real HyprBSD virtual machine on GitHub Actions -- QEMU-powered, with SSH and two-way folder sync'
 inputs:
   osname:
     description: 'The OS name'
     required: true
-    default: 'hardenedbsd'
+    default: 'hyprbsd'
   prepare:
     description: 'Install some tools before CI runs'
     required: false
@@ -12,13 +12,13 @@ inputs:
     description: 'The CI command to run'
     required: false
   release:
-    description: 'The release version of HardenedBSD vm. Only the leading, "." separated part of it is enough, the newest matching release is used.'
+    description: 'The release version of HyprBSD vm. Only the leading, "." separated part of it is enough, the newest matching release is used.'
     required: false
   arch:
-    description: 'The cpu architecture of HardenedBSD vm'
+    description: 'The cpu architecture of HyprBSD vm'
     required: false
   envs:
-    description: 'The envs to pass into HardenedBSD vm'
+    description: 'The envs to pass into HyprBSD vm'
     required: false
   mem:
     description: 'Set the memory size of the vm'
@@ -28,7 +28,7 @@ inputs:
     description: 'Set the cpu cores of the vm'
     required: false
   nat:
-    description: 'The NAT ports to HardenedBSD vm'
+    description: 'The NAT ports to HyprBSD vm'
     required: false
   usesh:
     description: 'Deprecated and ignored. The prepare/run scripts are always executed with sh.'
@@ -82,8 +82,8 @@ outputs:
   cache-after-prepare-hit:
     description: 'true when a prepared VM image cache was restored and the prepare step was skipped, false otherwise.'
 branding:
-  icon: 'shield'
-  color: 'gray-dark'
+  icon: 'monitor'
+  color: 'orange'
 
 runs:
   using: 'node24'

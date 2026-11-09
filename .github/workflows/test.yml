@@ -40,7 +40,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        release: [ "15"
+        release: [ "15.1"
  ]
         arch: [ "aarch64", "", "riscv64", "powerpc64", "sparc64", "ppc64le", "s390x", "i386", "loongarch64", "armv7"]
         runs: [ "ubuntu-26.04", "ubuntu-26.04-arm"]
@@ -69,28 +69,28 @@ jobs:
           - runs: "ubuntu-26.04"
             arch: "aarch64"
           # Manual matrix excludes only; combos with no conf are auto-excluded.
-          - release: "15"
+          - release: "15.1"
             arch: aarch64
-          - release: "15"
+          - release: "15.1"
             arch: riscv64
-          - release: "15"
+          - release: "15.1"
             arch: powerpc64
-          - release: "15"
+          - release: "15.1"
             arch: sparc64
-          - release: "15"
+          - release: "15.1"
             arch: ppc64le
-          - release: "15"
+          - release: "15.1"
             arch: s390x
-          - release: "15"
+          - release: "15.1"
             arch: i386
-          - release: "15"
+          - release: "15.1"
             arch: loongarch64
-          - release: "15"
+          - release: "15.1"
             arch: armv7
 
 
     runs-on: ${{ matrix.runs }}
-    name: sshfs HardenedBSD
+    name: sshfs HyprBSD
     env:
       MYTOKEN : ${{ secrets.MYTOKEN }}
       MYTOKEN2: "value2"
@@ -106,10 +106,10 @@ jobs:
 #        protocol: http
 #        port: 8000
 
-    - name: Test in HardenedBSD
+    - name: Test in HyprBSD
       if: ${{ contains(fromJSON('{"x86_64":["rsync","scp","sshfs","nfs","tar"],"aarch64":[],"riscv64":[],"powerpc64":[],"sparc64":[],"ppc64le":[],"s390x":[],"i386":[],"loongarch64":[],"armv7":[]}')[matrix.arch == '' && 'x86_64' || matrix.arch], 'sshfs') }}
       id: test
-      uses: vmactions/hardenedbsd-vm@e0468a860a32e9c7c3d803896de71c7914224339
+      uses: vmactions/hyprbsd-vm@04a67dad672e3c0a5b025341033f196d7ad58734
       with:
         envs: 'DEBUG MYTOKEN MYTOKEN2'
         prepare: |
@@ -154,7 +154,7 @@ jobs:
         ssh -v -p 20022 ${VM_USER:-root}@localhost  "uname -a;whoami;pwd"
     - name: Test custom shell
       if: ${{ contains(fromJSON('{"x86_64":["rsync","scp","sshfs","nfs","tar"],"aarch64":[],"riscv64":[],"powerpc64":[],"sparc64":[],"ppc64le":[],"s390x":[],"i386":[],"loongarch64":[],"armv7":[]}')[matrix.arch == '' && 'x86_64' || matrix.arch], 'sshfs') }}
-      shell: hardenedbsd {0}
+      shell: hyprbsd {0}
       run: |
         pwd
           pwd
@@ -198,7 +198,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        release: [ "15"
+        release: [ "15.1"
  ]
         arch: [ "aarch64", "", "riscv64", "powerpc64", "sparc64", "ppc64le", "s390x", "i386", "loongarch64", "armv7"]
         runs: [ "ubuntu-26.04", "ubuntu-26.04-arm"]
@@ -227,28 +227,28 @@ jobs:
           - runs: "ubuntu-26.04"
             arch: "aarch64"
           # Manual matrix excludes only; combos with no conf are auto-excluded.
-          - release: "15"
+          - release: "15.1"
             arch: aarch64
-          - release: "15"
+          - release: "15.1"
             arch: riscv64
-          - release: "15"
+          - release: "15.1"
             arch: powerpc64
-          - release: "15"
+          - release: "15.1"
             arch: sparc64
-          - release: "15"
+          - release: "15.1"
             arch: ppc64le
-          - release: "15"
+          - release: "15.1"
             arch: s390x
-          - release: "15"
+          - release: "15.1"
             arch: i386
-          - release: "15"
+          - release: "15.1"
             arch: loongarch64
-          - release: "15"
+          - release: "15.1"
             arch: armv7
 
 
     runs-on: ${{ matrix.runs }}
-    name: nfs HardenedBSD
+    name: nfs HyprBSD
     env:
       MYTOKEN : ${{ secrets.MYTOKEN }}
       MYTOKEN2: "value2"
@@ -256,10 +256,10 @@ jobs:
       GH_TOKEN: ${{ secrets.GH_TOKEN }}
     steps:
     - uses: actions/checkout@v7
-    - name: Test in HardenedBSD
+    - name: Test in HyprBSD
       if: ${{ contains(fromJSON('{"x86_64":["rsync","scp","sshfs","nfs","tar"],"aarch64":[],"riscv64":[],"powerpc64":[],"sparc64":[],"ppc64le":[],"s390x":[],"i386":[],"loongarch64":[],"armv7":[]}')[matrix.arch == '' && 'x86_64' || matrix.arch], 'nfs') }}
       id: test
-      uses: vmactions/hardenedbsd-vm@e0468a860a32e9c7c3d803896de71c7914224339
+      uses: vmactions/hyprbsd-vm@04a67dad672e3c0a5b025341033f196d7ad58734
       with:
         envs: 'DEBUG MYTOKEN MYTOKEN2'
         prepare: |
@@ -307,7 +307,7 @@ jobs:
         ssh -v -p 20022 ${VM_USER:-root}@localhost "uname -a;whoami;pwd"
     - name: Test custom shell
       if: ${{ contains(fromJSON('{"x86_64":["rsync","scp","sshfs","nfs","tar"],"aarch64":[],"riscv64":[],"powerpc64":[],"sparc64":[],"ppc64le":[],"s390x":[],"i386":[],"loongarch64":[],"armv7":[]}')[matrix.arch == '' && 'x86_64' || matrix.arch], 'nfs') }}
-      shell: hardenedbsd {0}
+      shell: hyprbsd {0}
       run: |
         pwd
           pwd
@@ -332,7 +332,7 @@ jobs:
     # share).
     - name: Non-root write
       if: ${{ matrix.arch == '' && contains(fromJSON('{"x86_64":["rsync","scp","sshfs","nfs","tar"],"aarch64":[],"riscv64":[],"powerpc64":[],"sparc64":[],"ppc64le":[],"s390x":[],"i386":[],"loongarch64":[],"armv7":[]}')['x86_64'], 'nfs') && !contains(github.repository, 'hurd') && !contains(github.repository, 'haiku') && !contains(github.repository, 'dragonflybsd') }}
-      shell: hardenedbsd {0}
+      shell: hyprbsd {0}
       run: |
         set -e
         mnt="$(pwd)"
@@ -404,7 +404,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        release: [ "15"
+        release: [ "15.1"
  ]
         arch: [ "aarch64", "", "riscv64", "powerpc64", "sparc64", "ppc64le", "s390x", "i386", "loongarch64", "armv7"]
         runs: [ "ubuntu-26.04", "ubuntu-26.04-arm"]
@@ -433,28 +433,28 @@ jobs:
           - runs: "ubuntu-26.04"
             arch: "aarch64"
           # Manual matrix excludes only; combos with no conf are auto-excluded.
-          - release: "15"
+          - release: "15.1"
             arch: aarch64
-          - release: "15"
+          - release: "15.1"
             arch: riscv64
-          - release: "15"
+          - release: "15.1"
             arch: powerpc64
-          - release: "15"
+          - release: "15.1"
             arch: sparc64
-          - release: "15"
+          - release: "15.1"
             arch: ppc64le
-          - release: "15"
+          - release: "15.1"
             arch: s390x
-          - release: "15"
+          - release: "15.1"
             arch: i386
-          - release: "15"
+          - release: "15.1"
             arch: loongarch64
-          - release: "15"
+          - release: "15.1"
             arch: armv7
 
 
     runs-on: ${{ matrix.runs }}
-    name: scp HardenedBSD
+    name: scp HyprBSD
     env:
       MYTOKEN : ${{ secrets.MYTOKEN }}
       MYTOKEN2: "value2"
@@ -469,10 +469,10 @@ jobs:
 #      with:
 #        protocol: http
 #        port: 8000
-    - name: Test in HardenedBSD
+    - name: Test in HyprBSD
       if: ${{ contains(fromJSON('{"x86_64":["rsync","scp","sshfs","nfs","tar"],"aarch64":[],"riscv64":[],"powerpc64":[],"sparc64":[],"ppc64le":[],"s390x":[],"i386":[],"loongarch64":[],"armv7":[]}')[matrix.arch == '' && 'x86_64' || matrix.arch], 'scp') }}
       id: test
-      uses: vmactions/hardenedbsd-vm@e0468a860a32e9c7c3d803896de71c7914224339
+      uses: vmactions/hyprbsd-vm@04a67dad672e3c0a5b025341033f196d7ad58734
       with:
         envs: 'DEBUG MYTOKEN MYTOKEN2'
         prepare: |
@@ -530,7 +530,7 @@ jobs:
         echo "host-data" > hostfile.txt
     - name: Test custom shell file sync
       if: ${{ contains(fromJSON('{"x86_64":["rsync","scp","sshfs","nfs","tar"],"aarch64":[],"riscv64":[],"powerpc64":[],"sparc64":[],"ppc64le":[],"s390x":[],"i386":[],"loongarch64":[],"armv7":[]}')[matrix.arch == '' && 'x86_64' || matrix.arch], 'scp') && !contains(github.repository, 'haiku') && !contains(github.repository, 'blissos') }}
-      shell: hardenedbsd {0}
+      shell: hyprbsd {0}
       run: |
         [ "$(cat hostfile.txt)" = "host-data" ]
         echo "vm-data" > vmfile.txt
@@ -583,7 +583,7 @@ jobs:
     # it with every step skipped.
     if: ${{ contains('{"x86_64":["rsync","scp","sshfs","nfs","tar"],"aarch64":[],"riscv64":[],"powerpc64":[],"sparc64":[],"ppc64le":[],"s390x":[],"i386":[],"loongarch64":[],"armv7":[]}', 'tar') }}
     runs-on: ubuntu-26.04
-    name: tar HardenedBSD
+    name: tar HyprBSD
     env:
       GH_TOKEN: ${{ secrets.GH_TOKEN }}
     steps:
@@ -601,10 +601,10 @@ jobs:
           conf
           .github
         sparse-checkout-cone-mode: true
-    - name: Test in HardenedBSD
+    - name: Test in HyprBSD
       if: ${{ contains('{"x86_64":["rsync","scp","sshfs","nfs","tar"],"aarch64":[],"riscv64":[],"powerpc64":[],"sparc64":[],"ppc64le":[],"s390x":[],"i386":[],"loongarch64":[],"armv7":[]}', 'tar') }}
       id: test
-      uses: vmactions/hardenedbsd-vm@e0468a860a32e9c7c3d803896de71c7914224339
+      uses: vmactions/hyprbsd-vm@04a67dad672e3c0a5b025341033f196d7ad58734
       with:
         mem: 4096
         debug: true
@@ -655,7 +655,7 @@ jobs:
     # so on every other repo this job was a green do-nothing.
     if: ${{ contains('{"x86_64":["rsync","scp","sshfs","nfs","tar"],"aarch64":[],"riscv64":[],"powerpc64":[],"sparc64":[],"ppc64le":[],"s390x":[],"i386":[],"loongarch64":[],"armv7":[]}', '9p') }}
     runs-on: ubuntu-26.04
-    name: 9p HardenedBSD
+    name: 9p HyprBSD
     env:
       GH_TOKEN: ${{ secrets.GH_TOKEN }}
     steps:
@@ -668,10 +668,10 @@ jobs:
           conf
           .github
         sparse-checkout-cone-mode: true
-    - name: Test in HardenedBSD
+    - name: Test in HyprBSD
       if: ${{ contains('{"x86_64":["rsync","scp","sshfs","nfs","tar"],"aarch64":[],"riscv64":[],"powerpc64":[],"sparc64":[],"ppc64le":[],"s390x":[],"i386":[],"loongarch64":[],"armv7":[]}', '9p') }}
       id: test
-      uses: vmactions/hardenedbsd-vm@e0468a860a32e9c7c3d803896de71c7914224339
+      uses: vmactions/hyprbsd-vm@04a67dad672e3c0a5b025341033f196d7ad58734
       with:
         mem: 4096
         debug: true
@@ -717,7 +717,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        release: [ "15"
+        release: [ "15.1"
  ]
         arch: [ "aarch64", "", "riscv64", "powerpc64", "sparc64", "ppc64le", "s390x", "i386", "loongarch64", "armv7"]
         runs: [ "ubuntu-26.04", "ubuntu-26.04-arm"]
@@ -741,39 +741,39 @@ jobs:
           - runs: "ubuntu-26.04-arm"
             arch: "armv7"
           # Manual matrix excludes only; combos with no conf are auto-excluded.
-          - release: "15"
+          - release: "15.1"
             arch: aarch64
-          - release: "15"
+          - release: "15.1"
             arch: riscv64
-          - release: "15"
+          - release: "15.1"
             arch: powerpc64
-          - release: "15"
+          - release: "15.1"
             arch: sparc64
-          - release: "15"
+          - release: "15.1"
             arch: ppc64le
-          - release: "15"
+          - release: "15.1"
             arch: s390x
-          - release: "15"
+          - release: "15.1"
             arch: i386
-          - release: "15"
+          - release: "15.1"
             arch: loongarch64
-          - release: "15"
+          - release: "15.1"
             arch: armv7
 
 
 
     runs-on: ${{ matrix.runs }}
-    name: rsync default HardenedBSD
+    name: rsync default HyprBSD
     env:
       MYTOKEN : ${{ secrets.MYTOKEN }}
       MYTOKEN2: "value2"
       GH_TOKEN: ${{ secrets.GH_TOKEN }}
     steps:
     - uses: actions/checkout@v7
-    - name: Test in HardenedBSD
+    - name: Test in HyprBSD
       if: ${{ contains(fromJSON('{"x86_64":["rsync","scp","sshfs","nfs","tar"],"aarch64":[],"riscv64":[],"powerpc64":[],"sparc64":[],"ppc64le":[],"s390x":[],"i386":[],"loongarch64":[],"armv7":[]}')[matrix.arch == '' && 'x86_64' || matrix.arch], 'rsync') }}
       id: test
-      uses: vmactions/hardenedbsd-vm@e0468a860a32e9c7c3d803896de71c7914224339
+      uses: vmactions/hyprbsd-vm@04a67dad672e3c0a5b025341033f196d7ad58734
       with:
         envs: 'MYTOKEN MYTOKEN2'
         prepare: |
@@ -811,7 +811,7 @@ jobs:
 
     - name: Test custom shell
       if: ${{ contains(fromJSON('{"x86_64":["rsync","scp","sshfs","nfs","tar"],"aarch64":[],"riscv64":[],"powerpc64":[],"sparc64":[],"ppc64le":[],"s390x":[],"i386":[],"loongarch64":[],"armv7":[]}')[matrix.arch == '' && 'x86_64' || matrix.arch], 'rsync') }}
-      shell: hardenedbsd {0}
+      shell: hyprbsd {0}
       run: |
         pwd
           pwd
@@ -860,15 +860,15 @@ jobs:
     strategy:
       fail-fast: false
     runs-on: ubuntu-26.04
-    name: disable-cache HardenedBSD
+    name: disable-cache HyprBSD
     env:
       GH_TOKEN: ${{ secrets.GH_TOKEN }}
     steps:
     - uses: actions/checkout@v7
-    - name: Test in HardenedBSD
+    - name: Test in HyprBSD
       if: ${{ contains(fromJSON('{"x86_64":["rsync","scp","sshfs","nfs","tar"],"aarch64":[],"riscv64":[],"powerpc64":[],"sparc64":[],"ppc64le":[],"s390x":[],"i386":[],"loongarch64":[],"armv7":[]}')['x86_64'], 'rsync') }}
       id: test
-      uses: vmactions/hardenedbsd-vm@e0468a860a32e9c7c3d803896de71c7914224339
+      uses: vmactions/hyprbsd-vm@04a67dad672e3c0a5b025341033f196d7ad58734
       with:
         prepare: |
           pkg install -y socat
@@ -918,7 +918,7 @@ jobs:
   # generate.tpl.yml, the arch matrices above and CONF_ARCHES in index.js.
   defaultreleasearches:
     runs-on: ubuntu-26.04
-    name: default release arches HardenedBSD
+    name: default release arches HyprBSD
     outputs:
       arches: ${{ steps.list.outputs.arches }}
     steps:
@@ -953,7 +953,7 @@ jobs:
     # aarch64 on the arm runner (KVM); booting it under TCG on the x86 runner
     # is covered by the rsync default matrix.
     runs-on: ${{ matrix.arch == 'aarch64' && 'ubuntu-26.04-arm' || 'ubuntu-26.04' }}
-    name: default release HardenedBSD
+    name: default release HyprBSD
     env:
       GH_TOKEN: ${{ secrets.GH_TOKEN }}
     steps:
@@ -966,9 +966,9 @@ jobs:
           conf
           .github
         sparse-checkout-cone-mode: true
-    - name: Test in HardenedBSD
+    - name: Test in HyprBSD
       id: test
-      uses: vmactions/hardenedbsd-vm@e0468a860a32e9c7c3d803896de71c7914224339
+      uses: vmactions/hyprbsd-vm@04a67dad672e3c0a5b025341033f196d7ad58734
       with:
         arch: ${{ matrix.arch }}
         debug: true
@@ -1006,17 +1006,17 @@ jobs:
     strategy:
       fail-fast: false
     runs-on: ubuntu-26.04
-    name: customshell HardenedBSD
+    name: customshell HyprBSD
     env:
       MYTOKEN : ${{ secrets.MYTOKEN }}
       MYTOKEN2: "value2"
       GH_TOKEN: ${{ secrets.GH_TOKEN }}
     steps:
     - uses: actions/checkout@v7
-    - name: Test in HardenedBSD
+    - name: Test in HyprBSD
       if: ${{ contains(fromJSON('{"x86_64":["rsync","scp","sshfs","nfs","tar"],"aarch64":[],"riscv64":[],"powerpc64":[],"sparc64":[],"ppc64le":[],"s390x":[],"i386":[],"loongarch64":[],"armv7":[]}')['x86_64'], 'rsync') }}
       id: test
-      uses: vmactions/hardenedbsd-vm@e0468a860a32e9c7c3d803896de71c7914224339
+      uses: vmactions/hyprbsd-vm@04a67dad672e3c0a5b025341033f196d7ad58734
       with:
         envs: 'MYTOKEN MYTOKEN2'
         prepare: |
@@ -1129,15 +1129,15 @@ jobs:
     strategy:
       fail-fast: false
     runs-on: ubuntu-26.04
-    name: cache-after-prepare seed HardenedBSD
+    name: cache-after-prepare seed HyprBSD
     env:
       GH_TOKEN: ${{ secrets.GH_TOKEN }}
     steps:
     - uses: actions/checkout@v7
-    - name: Test in HardenedBSD
+    - name: Test in HyprBSD
       if: ${{ contains(fromJSON('{"x86_64":["rsync","scp","sshfs","nfs","tar"],"aarch64":[],"riscv64":[],"powerpc64":[],"sparc64":[],"ppc64le":[],"s390x":[],"i386":[],"loongarch64":[],"armv7":[]}')['x86_64'], 'rsync') }}
       id: test
-      uses: vmactions/hardenedbsd-vm@e0468a860a32e9c7c3d803896de71c7914224339
+      uses: vmactions/hyprbsd-vm@04a67dad672e3c0a5b025341033f196d7ad58734
       with:
         mem: 4096
         debug: true
@@ -1189,17 +1189,17 @@ jobs:
     strategy:
       fail-fast: false
     runs-on: ubuntu-26.04
-    name: cache-after-prepare hit HardenedBSD
+    name: cache-after-prepare hit HyprBSD
     env:
       GH_TOKEN: ${{ secrets.GH_TOKEN }}
     steps:
     - uses: actions/checkout@v7
     # The inputs (notably 'prepare' and the sync method) must be byte-identical
     # to the seed job above: the prepared-image cache key hashes them.
-    - name: Test in HardenedBSD
+    - name: Test in HyprBSD
       if: ${{ contains(fromJSON('{"x86_64":["rsync","scp","sshfs","nfs","tar"],"aarch64":[],"riscv64":[],"powerpc64":[],"sparc64":[],"ppc64le":[],"s390x":[],"i386":[],"loongarch64":[],"armv7":[]}')['x86_64'], 'rsync') }}
       id: test
-      uses: vmactions/hardenedbsd-vm@e0468a860a32e9c7c3d803896de71c7914224339
+      uses: vmactions/hyprbsd-vm@04a67dad672e3c0a5b025341033f196d7ad58734
       with:
         mem: 4096
         debug: true
@@ -1265,7 +1265,7 @@ jobs:
     strategy:
       fail-fast: false
     runs-on: ubuntu-26.04
-    name: cache-after-prepare key-suffix seed HardenedBSD
+    name: cache-after-prepare key-suffix seed HyprBSD
     env:
       GH_TOKEN: ${{ secrets.GH_TOKEN }}
     steps:
@@ -1276,10 +1276,10 @@ jobs:
       run: |
         echo "hashFiles: ${{ hashFiles('.github/data/datafile.ini') }}"
         [ -n "${{ hashFiles('.github/data/datafile.ini') }}" ]
-    - name: Test in HardenedBSD
+    - name: Test in HyprBSD
       if: ${{ contains(fromJSON('{"x86_64":["rsync","scp","sshfs","nfs","tar"],"aarch64":[],"riscv64":[],"powerpc64":[],"sparc64":[],"ppc64le":[],"s390x":[],"i386":[],"loongarch64":[],"armv7":[]}')['x86_64'], 'rsync') }}
       id: test
-      uses: vmactions/hardenedbsd-vm@e0468a860a32e9c7c3d803896de71c7914224339
+      uses: vmactions/hyprbsd-vm@04a67dad672e3c0a5b025341033f196d7ad58734
       with:
         mem: 4096
         debug: true
@@ -1329,7 +1329,7 @@ jobs:
     strategy:
       fail-fast: false
     runs-on: ubuntu-26.04
-    name: cache-after-prepare key-suffix hit HardenedBSD
+    name: cache-after-prepare key-suffix hit HyprBSD
     env:
       GH_TOKEN: ${{ secrets.GH_TOKEN }}
     steps:
@@ -1337,10 +1337,10 @@ jobs:
     # The inputs (notably 'prepare', 'cache-after-prepare-key-suffix' and the
     # sync method) must be byte-identical to the seed job above: they all go
     # into the key.
-    - name: Test in HardenedBSD
+    - name: Test in HyprBSD
       if: ${{ contains(fromJSON('{"x86_64":["rsync","scp","sshfs","nfs","tar"],"aarch64":[],"riscv64":[],"powerpc64":[],"sparc64":[],"ppc64le":[],"s390x":[],"i386":[],"loongarch64":[],"armv7":[]}')['x86_64'], 'rsync') }}
       id: test
-      uses: vmactions/hardenedbsd-vm@e0468a860a32e9c7c3d803896de71c7914224339
+      uses: vmactions/hyprbsd-vm@04a67dad672e3c0a5b025341033f196d7ad58734
       with:
         mem: 4096
         debug: true
@@ -1399,7 +1399,7 @@ jobs:
     strategy:
       fail-fast: false
     runs-on: ubuntu-26.04
-    name: test default error HardenedBSD
+    name: test default error HyprBSD
     steps:
     # Sparse, like testtar/test9p: this job runs with the repo's DEFAULT sync,
     # which on the agent guests is the tar or 9P channel, and it would
@@ -1411,10 +1411,10 @@ jobs:
           conf
           .github
         sparse-checkout-cone-mode: true
-    - name: Test in HardenedBSD
+    - name: Test in HyprBSD
       id: testerr
       continue-on-error: true
-      uses: vmactions/hardenedbsd-vm@e0468a860a32e9c7c3d803896de71c7914224339
+      uses: vmactions/hyprbsd-vm@04a67dad672e3c0a5b025341033f196d7ad58734
       with:
         debug: true
         # A command that EXISTS and fails, rather than `false` or a made-up
@@ -1444,7 +1444,7 @@ jobs:
     strategy:
       fail-fast: false
     runs-on: ubuntu-26.04
-    name: test default success HardenedBSD
+    name: test default success HyprBSD
     steps:
     # Sparse, same reason as testerr above -- and this is the job the full
     # payload actually broke: the ReactOS push spent 12 minutes on those
@@ -1457,10 +1457,10 @@ jobs:
           conf
           .github
         sparse-checkout-cone-mode: true
-    - name: Test in HardenedBSD
+    - name: Test in HyprBSD
       id: testpass
       continue-on-error: true
-      uses: vmactions/hardenedbsd-vm@e0468a860a32e9c7c3d803896de71c7914224339
+      uses: vmactions/hyprbsd-vm@04a67dad672e3c0a5b025341033f196d7ad58734
       with:
         debug: true
         # No `true` and no double quotes: this body runs on every guest, and
