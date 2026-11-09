@@ -1,6 +1,6 @@
-# Run GitHub CI in HardenedBSD 
+# Run GitHub CI in HyprBSD 
 
-![Test](https://github.com/vmactions/hardenedbsd-vm/workflows/Test/badge.svg)
+![Test](https://github.com/vmactions/hyprbsd-vm/workflows/Test/badge.svg)
 
 
 
@@ -15,7 +15,7 @@ Powered by [AnyVM.org](https://anyvm.org)
 >
 > These VMs are now AI-ready. With the **[vmactions-ci skill](https://github.com/vmactions/vmactions-skill)**, an AI coding agent -- Claude Code, Codex, Copilot CLI, Gemini CLI, and others -- understands the full vmactions interface and writes the GitHub Actions CI for you, **automatically**.
 >
-> Just describe what you want in plain language, e.g. *"run my tests on HardenedBSD"* or *"check that my project builds on HardenedBSD aarch64"*, and the agent generates a correct, ready-to-commit `test.yml`. It will:
+> Just describe what you want in plain language, e.g. *"run my tests on HyprBSD"* or *"check that my project builds on HyprBSD aarch64"*, and the agent generates a correct, ready-to-commit `test.yml`. It will:
 >
 > - pick the right action, `release`, and `arch` for your target;
 > - install your toolchain and dependencies in the `prepare` step;
@@ -27,9 +27,9 @@ Powered by [AnyVM.org](https://anyvm.org)
 >
 > ### >> [Get the vmactions-ci skill](https://github.com/vmactions/vmactions-skill) <<
 
-Use this action to run your CI in HardenedBSD.
+Use this action to run your CI in HyprBSD.
 
-The github workflow only supports Ubuntu, Windows and MacOS. But what if you need to use HardenedBSD?
+The github workflow only supports Ubuntu, Windows and MacOS. But what if you need to use HyprBSD?
 
 
 All the supported releases are here:
@@ -38,48 +38,41 @@ All the supported releases are here:
 
 | Release | x86_64 |
 |---------|---------|
-| 15 | ✅ (rsync,scp,sshfs,nfs,tar) |
+| 15.1 | ✅ (rsync,scp,sshfs,nfs,tar) |
 
-<!-- shelved: 14 -->
+amd64 only: HyprBSD builds no other architecture, and it publishes one
+installer ISO per release rather than a VM image, so this builder takes the
+ISO path.
 
-amd64 only: HardenedBSD builds no other architecture, and it publishes
-installer ISOs rather than VM images, so this builder takes the ISO path.
+Release `15.1` is HyprBSD 15.1 (FreeBSD 15.1-RELEASE with the Hyprland
+desktop). Upstream has not published a final 15.1 ISO yet, so the image is
+built from the newest release candidate, `hyprbsd-15.1-rc3.iso`. The release
+name is already the final one: when the final ISO appears, the upstream
+watcher repoints the conf at it and the image keeps its name, the same way
+netbsd-builder moved 11.0 from RC7 to final media.
 
-Release `15` is HardenedBSD's 15-STABLE branch. It follows that branch's
-rolling `LATEST` installer -- upstream publishes `build-N` directories and
-moves `LATEST` to the newest -- so an image is a snapshot of the branch at
-build time, not a fixed upstream version, the same way nextbsd-builder tracks
-a `continuous` tag.
+The installed system boots through UEFI only (HyprBSD's installer writes an
+EFI system partition and no BIOS boot code), so anyvm starts it with OVMF.
 
-Release 14 is deliberately absent. Upstream has moved on from it: the newest
-14-STABLE installer is build-33 from 2025-12-17 and has not been rebuilt
-since, and the matching package repository is gone --
-`pkg.hardenedbsd.org/HardenedBSD/pkg/FreeBSD:14:amd64/` returns 404 while
-`:15:` and `:16:` answer, so a 14 guest cannot even bootstrap `pkg`. Only
-15-STABLE and current are maintained. `conf/hardenedbsd-14.conf` is kept on
-disk with the details rather than deleted, so this does not have to be
-rediscovered.
-
-The installer ISO is VGA-only upstream (a stock boot produces zero bytes on
-COM1), so `hooks/host_beforeBuild.py` remixes it with a serial console before
-the build starts, and bakes the distribution sets into `/usr/freebsd-dist` on
-that ISO so bsdinstall never fetches over the network. That hook documents the
-three traps involved -- xorriso's `replay` silently dropping the El Torito
-record, the ISO volume label being load-bearing for the root mount, and
-`-osirrox` extraction losing root ownership -- each of which produces a broken
-image rather than an error.
+The image keeps HyprBSD's desktop installed but boots to a text console:
+SDDM is disabled, because its Hyprland greeter needs a 3D-capable virtio-gpu
+(VirGL) that anyvm's display does not provide -- left on, the VNC console just
+shows a black screen. `service sddm onestart` brings the desktop back on a
+VirGL-capable display. HyprBSD's default-deny `pf` firewall is also disabled,
+so anyvm's port forwards reach the guest.
 
 How the images are built:
 
 Each image is built automatically in the
-[anyvm-org/hardenedbsd-builder](https://github.com/anyvm-org/hardenedbsd-builder)
-repo's GitHub Actions: it downloads the official HardenedBSD installer
-ISO, remixes it for a serial console, boots it in QEMU, answers the
-installer unattended, enables ssh, pre-installs the packages listed in
-the conf, and exports the installed disk as a compressed qcow2 image.
+[anyvm-org/hyprbsd-builder](https://github.com/anyvm-org/hyprbsd-builder)
+repo's GitHub Actions: it downloads the official HyprBSD installer ISO,
+boots it in QEMU under UEFI (OVMF) with a small CIDATA disk carrying the
+answers for HyprBSD's own unattended installer, lets that installer put
+HyprBSD on the disk, enables ssh, pre-installs the packages listed in the
+conf, and exports the installed disk as a compressed qcow2 image.
 
-Upstream install media: the official HardenedBSD installers from
-https://installers.hardenedbsd.org/pub/.
+Upstream install media: the official HyprBSD ISOs linked from the
+release page, https://hyprbsd.org/releases/.
 
 
 
@@ -96,15 +89,15 @@ on: [push]
 jobs:
   test:
     runs-on: ubuntu-latest
-    name: A job to run test in HardenedBSD
+    name: A job to run test in HyprBSD
     env:
       MYTOKEN : ${{ secrets.MYTOKEN }}
       MYTOKEN2: "value2"
     steps:
     - uses: actions/checkout@v7
-    - name: Test in HardenedBSD
+    - name: Test in HyprBSD
       id: test
-      uses: vmactions/hardenedbsd-vm@v1
+      uses: vmactions/hyprbsd-vm@v0
       with:
         envs: 'MYTOKEN MYTOKEN2'
         prepare: |
@@ -126,7 +119,7 @@ jobs:
 ```
 
 
-The latest major version is: `v1`, which is the most recommended to use. (You can also use the latest full version: `v1.0.1`)  
+The latest major version is: `v0`, which is the most recommended to use. (You can also use the latest full version: `v0.0.0`)  
 
 
 If you are migrating from the previous `v0`, please change the `runs-on: ` to `runs-on: ubuntu-latest`
@@ -163,7 +156,7 @@ The code is shared from the host to the VM via the first sync method listed for 
 
     - name: Test
       id: test
-      uses: vmactions/hardenedbsd-vm@v1
+      uses: vmactions/hyprbsd-vm@v0
       with:
         sync: sshfs  # or: nfs
 
@@ -185,7 +178,7 @@ When using a copy based sync method (`rsync`, `scp`, `tar` or `9p`), you can def
 
     - name: Test
       id: test
-      uses: vmactions/hardenedbsd-vm@v1
+      uses: vmactions/hyprbsd-vm@v0
       with:
         sync: rsync
         copyback: false
@@ -211,7 +204,7 @@ You can add NAT port between the host and the VM.
 ...
     - name: Test
       id: test
-      uses: vmactions/hardenedbsd-vm@v1
+      uses: vmactions/hyprbsd-vm@v0
       with:
         nat: |
           "8080": "80"
@@ -230,7 +223,7 @@ The default memory of the VM is 6144MB, you can use `mem` option to set the memo
 ...
     - name: Test
       id: test
-      uses: vmactions/hardenedbsd-vm@v1
+      uses: vmactions/hyprbsd-vm@v0
       with:
         mem: 4096
 ...
@@ -245,7 +238,7 @@ The VM is using all the cpu cores of the host by default, you can use `cpu` opti
 ...
     - name: Test
       id: test
-      uses: vmactions/hardenedbsd-vm@v1
+      uses: vmactions/hyprbsd-vm@v0
       with:
         cpu: 3
 ...
@@ -254,18 +247,31 @@ The VM is using all the cpu cores of the host by default, you can use `cpu` opti
 
 ## 5. Select release
 
-It uses [the HardenedBSD 15](conf/default.release.conf) by default, you can use `release` option to use another version of HardenedBSD:
+It uses [the HyprBSD 15.1](conf/default.release.conf) by default, you can use `release` option to use another version of HyprBSD:
 
 ```yaml
 ...
     - name: Test
       id: test
-      uses: vmactions/hardenedbsd-vm@v1
+      uses: vmactions/hyprbsd-vm@v0
+      with:
+        release: "15.1"
+...
+```
+
+You can also give only the leading, `.` separated part of a release. The newest release that starts with it is used, so the workflow does not have to be edited for every point release:
+
+```yaml
+...
+    - name: Test
+      id: test
+      uses: vmactions/hyprbsd-vm@v0
       with:
         release: "15"
 ...
 ```
 
+Here `release: "15"` runs the newest `15.x` release of HyprBSD. Each part you give has to match in full, so a release that does not exist fails the job instead of quietly falling back to another one.
 
 ## 6. Select architecture
 
@@ -275,7 +281,7 @@ The vm is using x86_64(AMD64) by default, but you can use `arch` option to chang
 ...
     - name: Test
       id: test
-      uses: vmactions/hardenedbsd-vm@v1
+      uses: vmactions/hyprbsd-vm@v0
       with:
         arch: aarch64
 ...
@@ -297,16 +303,16 @@ Support custom shell:
     - uses: actions/checkout@v7
     - name: Start VM
       id: vm
-      uses: vmactions/hardenedbsd-vm@v1
+      uses: vmactions/hyprbsd-vm@v0
       with:
         sync: nfs
     - name: Custom shell step 1
-      shell: hardenedbsd {0}
+      shell: hyprbsd {0}
       run: |
         pwd
         echo "this is step 1, running inside the VM"
     - name: Custom shell step 2
-      shell: hardenedbsd {0}
+      shell: hyprbsd {0}
       run: |
         pwd
         echo "this is step 2, running inside the VM"
@@ -328,7 +334,7 @@ You can also use `custom-shell-name` to set a custom name for the shell wrapper:
     - uses: actions/checkout@v7
     - name: Start VM
       id: vm
-      uses: vmactions/hardenedbsd-vm@v1
+      uses: vmactions/hyprbsd-vm@v0
       with:
         sync: nfs
         custom-shell-name: vmsh
@@ -354,7 +360,7 @@ If the time in VM is not correct, You can use `sync-time` option to synchronize 
 ...
     - name: Test
       id: test
-      uses: vmactions/hardenedbsd-vm@v1
+      uses: vmactions/hyprbsd-vm@v0
       with:
         sync-time: true
 ...
@@ -369,7 +375,7 @@ By default, the action caches `apt` packages on the host and VM images/artifacts
 ...
     - name: Test
       id: test
-      uses: vmactions/hardenedbsd-vm@v1
+      uses: vmactions/hyprbsd-vm@v0
       with:
         disable-cache: true
 ...
@@ -384,7 +390,7 @@ The `prepare` step (installing packages etc.) normally runs on every build. With
 ...
     - name: Test
       id: test
-      uses: vmactions/hardenedbsd-vm@v1
+      uses: vmactions/hyprbsd-vm@v0
       with:
         cache-after-prepare: true
         prepare: |
@@ -404,7 +410,7 @@ The cache key only covers the `prepare` text itself. When `prepare` runs a scrip
     - uses: actions/checkout@v7
     - name: Test
       id: test
-      uses: vmactions/hardenedbsd-vm@v1
+      uses: vmactions/hyprbsd-vm@v0
       with:
         cache-after-prepare: true
         cache-after-prepare-key-suffix: deps-${{ hashFiles('ci/install-deps.sh') }}
@@ -440,7 +446,7 @@ Then use it in the workflow:
 ...
     - name: Test
       id: test
-      uses: vmactions/hardenedbsd-vm@v1
+      uses: vmactions/hyprbsd-vm@v0
       with:
         debug-on-error: ${{ vars.DEBUG_ON_ERROR }}
 
@@ -453,7 +459,7 @@ You can also set the `vnc-password` parameter to set a custom password to protec
 ...
     - name: Test
       id: test
-      uses: vmactions/hardenedbsd-vm@v1
+      uses: vmactions/hyprbsd-vm@v0
       with:
         debug-on-error: ${{ vars.DEBUG_ON_ERROR }}
         vnc-password: ${{ secrets.VNC_PASSWORD }}
@@ -470,7 +476,7 @@ See more: [debug on error](https://github.com/vmactions/.github/wiki/debug%E2%80
 
 # Under the hood
 
-We use Qemu to run the HardenedBSD VM.
+We use Qemu to run the HyprBSD VM.
 
 
 
