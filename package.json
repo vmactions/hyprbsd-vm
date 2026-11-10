@@ -1,6 +1,6 @@
 {
   "name": "vmactions-HyprBSD",
-  "version": "",
+  "version": "1.0.0",
   "description": "GitHub actions for HyprBSD",
   "type": "module",
   "main": "index.js",
